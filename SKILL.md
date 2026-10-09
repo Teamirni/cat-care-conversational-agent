@@ -129,7 +129,7 @@ E0 输出必须包含：明确的急诊升级、不要等待聊天继续观察�
 - 入口：`python server.py` → `http://127.0.0.1:8787`
 - 知识库：`data/knowledge_base_v1.jsonl`（14 条权威 sha256 锁定）+ `data/fallback_entries.jsonl`（3 条兜底）
 - 来源表：`data/source_facts.json`（16 条 verified sources）
-- 验收：`python tests/smoke.py` → `PASS 78/78`
+- 验收：`python tests/smoke.py` → `PASS 86/86`
 
 详见 `README.md` 与 `docs/验收报告.md`。
 

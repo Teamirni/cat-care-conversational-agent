@@ -1,0 +1,107 @@
+
+── G1 数据完整性 (9)
+  OK  G1.1 KB-001…014 文件存在且 sha256 与 lockfile 一致  -- D:\工作文件\猫咪健康Agent_复原Demo_2026-08-24\data\knowledge_base_v1.jsonl
+  OK  G1.2 sha256 等于 d3fd851a…（权威副本未被改）  -- d3fd851a1ce2…
+  OK  G1.3 source_facts.json sha256 等于 3c69c852…  -- 3c69c8524930…
+  OK  G1.4 KB_ALL 共 17 条（14 权威 + 3 兜底）  -- 17
+  OK  G1.5 全部 KB 含 diagnosis_boundary
+  OK  G1.6 VERIFIED_SOURCE_IDS 共 16 个  -- 16
+  OK  G1.7 EXTRA_ALIASES 目标词在 KB 词表中（子串匹配）  -- 0 missing
+  OK  G1.8 FLAG_EVIDENCE_HINTS.sources 与 KB 条目一致
+  OK  G1.9 模板常量不含 3 条 must_not 原文（强制走独立字段）
+
+── G2 启动自检 (5)
+  OK  G2.1 knowledge.self_check() 不抛致命异常  -- warnings=["routers.ts 死别名（已由修正层处理）：食欲不振", "routers.ts 死别名（已由修正层处理）：进出猫砂盆", "routers.ts 死别名（已由修正层处理）：精神下降", "routers.ts 死别名（已由修正层处理）：行为或意识改变"]
+  OK  G2.2 ROUTERS_DEAD_ALIASES 含 4 条死别名
+  OK  G2.3 KB-017 = FALLBACK_ENTRY_ID
+  OK  G2.4 全部 KB 含 source_ids
+  OK  G2.5 全部 KB 含 questions 字段（routers.ts 用 questions 补缺，不是答案文本）
+
+── G3 重试档位真实发生变化 (8)
+  OK  G3.1 口语「猫今天不太爱吃」在 R0 失败后升档至 R1  -- [('R0', 'E0', 'A0', 'rejected'), ('R1', 'E0', 'A0', 'approved')]
+  OK  G3.2 重试链上档位三元组 (R,E,A) 至少出现 2 种不同组合  -- {('R1', 'E0', 'A0'), ('R0', 'E0', 'A0')}
+  OK  G3.3 最终 attempt.status == approved
+  OK  G3.4 review.attempts 共 1-3 行（≤MAX_ATTEMPTS）  -- 2
+  OK  G3.5 「猫打喷嚏流鼻涕」档位真的升到 R2（兜底条目之后）  -- [('R0', 'E0', 'A0', 'rejected'), ('R1', 'E0', 'A0', 'rejected'), ('R2', 'E0', 'A0', 'approved')]
+  OK  G3.6 重试链上档位三元组 (R,E,A) 出现 ≥ 2 种组合（真实重试而非重生成装饰）  -- {('R2', 'E0', 'A0'), ('R1', 'E0', 'A0'), ('R0', 'E0', 'A0')}
+  OK  G3.7 review_log 已落库，list_review_log 返回每行尝试  -- 3
+  OK  G3.8 review.trace_id 已生成（≥6 字符 唯一标识）  -- web-1791543393593-2
+
+── G4 E0 召回 5 例 (5)
+  OK  G4.1 「猫张口呼吸」urgency_level == E0  -- E0
+  OK  G4.1.b 「猫张口呼吸」attempt = 1（一次通过）  -- 1
+  OK  G4.1.c 「猫张口呼吸」命中预期 KB ['KB-001']  -- ['KB-001']
+  OK  G4.1.d 「猫张口呼吸」证据对象至少 1 条  -- 4
+  OK  G4.1.e 「猫张口呼吸」正文含「尽快」或「急诊」
+  OK  G4.2 「猫只尿出几滴」urgency_level == E0  -- E0
+  OK  G4.2.b 「猫只尿出几滴」attempt = 1（一次通过）  -- 1
+  OK  G4.2.c 「猫只尿出几滴」命中预期 KB ['KB-002', 'KB-011']  -- ['KB-002']
+  OK  G4.2.d 「猫只尿出几滴」证据对象至少 1 条  -- 3
+  OK  G4.2.e 「猫只尿出几滴」正文含「尽快」或「急诊」
+  OK  G4.3 「猫吃了百合」urgency_level == E0  -- E0
+  OK  G4.3.b 「猫吃了百合」attempt = 1（一次通过）  -- 1
+  OK  G4.3.c 「猫吃了百合」命中预期 KB ['KB-003']  -- ['KB-003']
+  OK  G4.3.d 「猫吃了百合」证据对象至少 1 条  -- 3
+  OK  G4.3.e 「猫吃了百合」正文含「尽快」或「急诊」
+  OK  G4.4 「小猫持续抽搐五分钟」urgency_level == E0  -- E0
+  OK  G4.4.b 「小猫持续抽搐五分钟」attempt = 1（一次通过）  -- 1
+  OK  G4.4.c 「小猫持续抽搐五分钟」命中预期 KB ['KB-003', 'KB-004']  -- ['KB-003', 'KB-004']
+  OK  G4.4.d 「小猫持续抽搐五分钟」证据对象至少 1 条  -- 3
+  OK  G4.4.e 「小猫持续抽搐五分钟」正文含「尽快」或「急诊」
+  OK  G4.5 「猫被车撞了一直流血」urgency_level == E0  -- E0
+  OK  G4.5.b 「猫被车撞了一直流血」attempt = 1（一次通过）  -- 1
+  OK  G4.5.c 「猫被车撞了一直流血」命中预期 KB ['KB-005']  -- ['KB-005']
+  OK  G4.5.d 「猫被车撞了一直流血」证据对象至少 1 条  -- 3
+  OK  G4.5.e 「猫被车撞了一直流血」正文含「尽快」或「急诊」
+
+── G5 昵称抽取 (8)
+  OK  G5.1 「我家小白今天吐了」昵称抽取 == '小白'  -- got='小白'
+  OK  G5.2 「我家小黑今天呕吐」昵称抽取 == '小黑'  -- got='小黑'
+  OK  G5.3 「我家的猫咪叫小咪，是只英短」昵称抽取 == '小咪'  -- got='小咪'
+  OK  G5.4 「我家的猫叫大橘」昵称抽取 == '大橘'  -- got='大橘'
+  OK  G5.5 「猫今天不太爱吃」昵称抽取 == None  -- got=None
+  OK  G5.6 「猫掉毛很厉害」昵称抽取 == None  -- got=None
+  OK  G5.7 「猫打喷嚏流鼻涕」昵称抽取 == None  -- got=None
+  OK  G5.8 「提醒我明天带猫去复诊」昵称抽取 == None  -- got=None
+  OK  G5.9 「咪咪今天吐了」昵称抽取 == '咪咪'  -- got='咪咪'
+  OK  G5.10 「奶茶吐了」昵称抽取 == '奶茶'  -- got='奶茶'
+  OK  G5.11 「布丁没精神」昵称抽取 == '布丁'  -- got='布丁'
+  OK  G5.12 「猫咪橘座吐了」昵称抽取 == '橘座'  -- got='橘座'
+  OK  G5.13 「大胖今天不吃」昵称抽取 == '大胖'  -- got='大胖'
+  OK  G5.14 「巧克力今天拉稀」昵称抽取 == '巧克力'  -- got='巧克力'
+  OK  G5.15 「我的猫今天吐了」昵称抽取 == None  -- got=None
+  OK  G5.16 「我喝了奶茶没养猫」昵称抽取 == None  -- got=None
+
+── G6 省略句绑定 (4)
+  OK  G6.1 椭圆补全「突然的」产生 focus (messages+补充)  -- 小白
+  OK  G6.2 多轮下 review.status 不崩
+  OK  G6.3 再次省略仍能产出 answer
+  OK  G6.4 messages 表里之前消息存在（持久化）
+
+── G7 提醒三要素门禁 (4)
+  OK  G7.1 缺时间/时区时产生 1+ 条追问
+  OK  G7.2 缺时间/时区时不创建提醒
+  OK  G7.3 reminders 表 create_reminder 成功（schema 一致）  -- {"title": "喂药", "instruction": "晚上 8 点给它喂药", "schedule": "20:00", "timezone": "Asia/Shanghai", "id": "reminder-1791543393617-2", "status": "active"}
+  OK  G7.4 reminder 对象含 timezone / schedule / instruction
+
+── G8 记忆门禁 + 进程重启恢复 (8)
+  OK  G8.1 首轮产生 1+ profile_candidates  -- 2
+  OK  G8.2 candidates 状态均 = candidate
+  OK  G8.3 候选确认前 profile 表为空
+  OK  G8.4 confirm 后 profile 含至少 1 条记录
+  OK  G8.5 candidates 状态全部转为 confirmed
+  OK  G8.6 重启后 profile 仍能读回  -- 1
+  OK  G8.7 重启后 welcomed 状态可重新查询（不退化为 None）  -- False
+  OK  G8.8 重启后 messages 历史仍能列出  -- 2
+
+── G9 16 来源渲染 (7)
+  OK  G9.1 证据对象至少 1 条
+  OK  G9.2 每条 evidence.source_id 在 VERIFIED_SOURCE_IDS
+  OK  G9.3 evidence 含 title / organization / url / checked_at
+  OK  G9.4 16 个 verified source id 全部能在 KB 条目 source_ids 中找到
+  OK  G9.5 S16 在 16 个 verified source 内（间接证据：旧版缺失，已修复）
+  OK  G9.6 diagnosis_boundary 字段非空
+  OK  G9.7 can_do / must_not 作为独立字段（不进 answer）
+
+============================================================
+PASS 86/86   全部通过

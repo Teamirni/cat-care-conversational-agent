@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 运行时数据库（评测与 demo 都会生成）
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/*.log
+*.sqlite3
+
+# 系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 编辑器
+.vscode/
+.idea/
+
+# 评测中间产物（保留 runs/ 下的正式对照结果）
+runs/*.tmp
+runs/_scratch*
