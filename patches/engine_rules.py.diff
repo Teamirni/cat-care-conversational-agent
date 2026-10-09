@@ -1,0 +1,106 @@
+--- D:/工作文件/猫咪健康Agent_复原Demo_2026-08-24/engine/rules.py	2026-08-30 17:39:34.955244600 +0800
++++ D:/工作文件/猫咪Agent_评测闭环_20261009/_shadow_fixed/engine/rules.py	2026-10-09 14:35:09.738974500 +0800
+@@ -23,7 +23,7 @@
+     "无尿", "尿不出来", "只尿出几滴",
+     "倒地", "失去意识", "意识丧失", "昏迷",
+     "持续抽搐",
+-    "中毒", "吃了百合", "误食百合",
++    "中毒", "吃了百合", "误食百合", "百合",
+     "大量出血", "车祸", "严重外伤",
+ )
+ 
+@@ -53,8 +53,34 @@
+     "连续抽搐": "持续抽搐",
+     "抽个不停": "持续抽搐",
+     "反复抽搐": "持续抽搐",
++    # --- 扩展：毒物名 → 中毒（SKILL 原则 1「疑似中毒」为红旗）---
++    "老鼠药": "中毒",
++    "鼠药": "中毒",
++    "毒鼠": "中毒",
++    "蟑螂药": "中毒",
++    "杀虫剂": "中毒",
++    "农药": "中毒",
++    "除草剂": "中毒",
++    "防冻液": "中毒",
++    # --- 扩展：人类药物 → 中毒 ---
++    "人用药": "中毒",
++    "布洛芬": "中毒",
++    "对乙酰氨基酚": "中毒",
++    "扑热息痛": "中毒",
++    "阿司匹林": "中毒",
++    "感冒药": "中毒",
++    "安眠药": "中毒",
+ }
+ 
++# 抽搐时长/持续态正则层：FLAG_NORM 只能折叠固定词形，
++# 「抽搐五分钟了还没停」这类「动作 + 数值 + 单位」需正则才能识别。
++_RE_SEIZURE_LONG = re.compile(
++    r"抽搐[^，。；！？\n]{0,8}?(?:[5-9]|1\d|[五六七八九十])\s*分"
++)
++_RE_SEIZURE_ONGOING = re.compile(
++    r"抽搐[^，。；！？\n]{0,8}?(?:还没停|没停|不停|不止|持续|连续|反复)"
++)
++
+ _NEGATIONS = ("没有", "不是", "并非", "未出现", "排除", "不会", "无")
+ 
+ 
+@@ -72,7 +98,7 @@
+ 
+ 
+ def detect_e0(text: str) -> list[str]:
+-    """返回命中的规范红旗词列表（routers.ts L105-108 + 口语归一化 + 否定窗口）。"""
++    """返回命中的规范红旗词列表（routers.ts L105-108 + 口语归一化 + 否定窗口 + 时长正则层）。"""
+     normalized = _apply_norm((text or ""), FLAG_NORM)
+     found: list[str] = []
+     for flag in RED_FLAGS:
+@@ -85,6 +111,13 @@
+                 found.append(flag)
+                 break
+             start = idx + len(flag)
++    # 时长/持续态正则层：「抽搐 ≥5 分钟」「抽搐…还没停」等词表覆盖不到的表达
++    if "持续抽搐" not in found:
++        for rx in (_RE_SEIZURE_LONG, _RE_SEIZURE_ONGOING):
++            m = rx.search(normalized)
++            if m and not _is_negated(normalized, m.start()):
++                found.append("持续抽搐")
++                break
+     return found
+ 
+ 
+@@ -148,14 +181,24 @@
+ # 宠物代词 / 称谓：用于判断词典命中是否有语境支撑（避免「我喝了奶茶」误判）
+ _PET_DETERMINERS = ("猫", "猫咪", "猫猫", "毛孩子", "主子", "宠物")
+ 
++# 昵称首字黑名单：结构性虚词不可能出现在猫名开头。
++# 修复：「它一直往猫砂盆跑…还叫得很惨」→ 旧实现把裸「叫」当命名结构，
++#       捕获「得很惨」为昵称，导致一条泌尿阻塞急症被回成改昵称的客套话。
++_NICKNAME_BAD_FIRST_CHARS = frozenset("得了着过个起出醒唤叫的之亦而且但")
++
++# 「叫」后紧跟这些字说明它是动词「喊叫」而非命名结构，禁止跨过
++_RE_NAMED_NEGATIVE_TAIL = r"(?!得|了|着|过|个不停|不停|起来|出声|唤|醒|什么|啥|做|起来)"
++
+ # 「叫/名字是/名叫」明示优先（兼容「我家小黑叫小白」/「猫咪叫小白」结构）
+ _RE_NAMED = re.compile(
+-    r"(?:我的|我家|家里的|家中)?(?:猫咪|猫猫|猫|它)?\s*(?:叫|名字是|名叫)\s*([一-龥A-Za-z0-9]{2,8})"
++    r"(?:我的|我家|家里的|家中)?(?:猫咪|猫猫|猫|它)?\s*(?:叫|名字是|名叫)"
++    + _RE_NAMED_NEGATIVE_TAIL +
++    r"\s*([一-龥A-Za-z0-9]{2,8})"
+ )
+ 
+ # 判断用户是否明确声明名字（而非仅上下文推断）
+ _RE_EXPLICIT_NAME_CLAIM = re.compile(
+-    r"(?:叫|名字是|名叫)\s*[一-龥A-Za-z0-9]{2,8}"
++    r"(?:叫|名字是|名叫)" + _RE_NAMED_NEGATIVE_TAIL + r"\s*[一-龥A-Za-z0-9]{2,8}"
+ )
+ 
+ def is_explicit_name_claim(text: str) -> bool:
+@@ -198,6 +241,9 @@
+         return False
+     if len(candidate) < _NICKNAME_MIN_LEN:
+         return False
++    # 首字为结构性虚词 → 必为动词短语残片（「得很惨」「了个啥」），非昵称
++    if candidate[0] in _NICKNAME_BAD_FIRST_CHARS:
++        return False
+     if candidate in NICKNAME_STOPWORDS or candidate in NICKNAME_GENERIC or candidate in NICKNAME_TOPIC_EXCLUDE:
+         return False
+     # 任一主题词出现即视为主题而非昵称（如「小白掉毛」不该当昵称）
